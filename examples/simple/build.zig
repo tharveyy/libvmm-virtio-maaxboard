@@ -2,7 +2,8 @@ const std = @import("std");
 
 const MicrokitBoard = enum {
     qemu_arm_virt,
-    odroidc4
+    odroidc4,
+    maaxboard,
 };
 
 const Target = struct {
@@ -28,7 +29,16 @@ const targets = [_]Target {
             .os_tag = .freestanding,
             .abi = .none,
         },
-    }
+    },
+    .{
+        .board = MicrokitBoard.maaxboard,
+        .zig_target = std.zig.CrossTarget{
+            .cpu_arch = .aarch64,
+            .cpu_model = .{ .explicit = &std.Target.arm.cpu.cortex_a53 },
+            .os_tag = .freestanding,
+            .abi = .none,
+        },
+    },
 };
 
 fn findTarget(board: MicrokitBoard) std.zig.CrossTarget {
@@ -48,7 +58,7 @@ const ConfigOptions = enum {
     benchmark
 };
 
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     // Getting the path to the Microkit SDK before doing anything else
@@ -99,12 +109,18 @@ pub fn build(b: *std.Build) void {
         .strip = false,
     });
 
+    const base_dts_file = try std.fs.cwd().openFile(b.fmt("board/{s}/linux.dts", .{ microkit_board }), .{});
+    const base_dts = try base_dts_file.reader().readAllAlloc(b.allocator, (try base_dts_file.stat()).size);
+    const overlay_dts_file = try std.fs.cwd().openFile(b.fmt("board/{s}/overlay.dts", .{ microkit_board }), .{});
+    const overlay_dts = try base_dts_file.reader().readAllAlloc(b.allocator, (try overlay_dts_file.stat()).size);
+    const final_dts = try std.mem.concat(b.allocator, u8, &[_][]const u8{ base_dts, overlay_dts });
+
     // For actually compiling the DTS into a DTB
-    const dts_path = b.fmt("board/{s}/linux.dts", .{ microkit_board });
     const dtc_cmd = b.addSystemCommand(&[_][]const u8{
         "dtc", "-q", "-I", "dts", "-O", "dtb"
     });
-    dtc_cmd.addFileArg(.{ .path = dts_path });
+    dtc_cmd.addFileArg(.{ .path = b.getInstallPath(.prefix, "final.dts") });
+    dtc_cmd.step.dependOn(&b.addInstallFileWithDir(final_dts, .prefix, "final.dts").step);
     const dtb = dtc_cmd.captureStdOut();
 
     // Add microkit.h to be used by the API wrapper.
