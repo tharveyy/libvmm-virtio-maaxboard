@@ -72,13 +72,13 @@ ELFS := vmm.elf
 IMAGE_FILE = $(BUILD_DIR)/loader.img
 REPORT_FILE = $(BUILD_DIR)/report.txt
 
-V3_BOARDS := BOARD_maaxboard
-ifeq ($(filter ${MICROKIT_BOARD},${V3_BOARDS}),)
+V3_BOARDS := maaxboard
+ifeq ($(filter ${BOARD},${V3_BOARDS}),)
 	VGIC := GIC_V2
-	VGIC_OBJS := src/arch/aarch64/vgic/vgic_v2.o
+	VGIC_OBJS := vgic_v2.o
 else
 	VGIC := GIC_V3
-	VGIC_OBJS := src/arch/aarch64/vgic/vgic_v3.o
+	VGIC_OBJS := vgic_v3.o
 endif
 
 # @ivanv: should only compile printf.o in debug
