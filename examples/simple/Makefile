@@ -72,8 +72,17 @@ ELFS := vmm.elf
 IMAGE_FILE = $(BUILD_DIR)/loader.img
 REPORT_FILE = $(BUILD_DIR)/report.txt
 
+V3_BOARDS := BOARD_maaxboard
+ifeq ($(filter ${MICROKIT_BOARD},${V3_BOARDS}),)
+	VGIC := GIC_V2
+	VGIC_OBJS := src/arch/aarch64/vgic/vgic_v2.o
+else
+	VGIC := GIC_V3
+	VGIC_OBJS := src/arch/aarch64/vgic/vgic_v3.o
+endif
+
 # @ivanv: should only compile printf.o in debug
-VMM_OBJS := vmm.o printf.o virq.o linux.o guest.o psci.o smc.o fault.o util.o vgic.o vgic_v3.o package_guest_images.o tcb.o vcpu.o
+VMM_OBJS := vmm.o printf.o virq.o linux.o guest.o psci.o smc.o fault.o util.o vgic.o package_guest_images.o tcb.o vcpu.o $(VGIC_OBJS)
 
 # Toolchain flags
 # FIXME: For optimisation we should consider providing the flag -mcpu.
