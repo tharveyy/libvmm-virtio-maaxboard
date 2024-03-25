@@ -41,7 +41,7 @@ pub fn build(b: *std.Build) void {
     const microkit_sdk_arg = b.option([]const u8, "sdk", "Path to Microkit SDK");
     if (microkit_sdk_arg == null) {
         std.log.err("Missing -Dsdk=/path/to/sdk argument being passed\n", .{});
-        std.os.exit(1);
+        std.posix.exit(1);
     }
     const microkit_sdk = microkit_sdk_arg.?;
     std.fs.cwd().access(microkit_sdk, .{}) catch |err| {
@@ -49,7 +49,7 @@ pub fn build(b: *std.Build) void {
             error.FileNotFound => std.log.err("Path to SDK '{s}' does not exist\n", .{ microkit_sdk }),
             else => std.log.err("Could not acccess SDK path '{s}', error is {any}\n", .{ microkit_sdk, err })
         }
-        std.os.exit(1);
+        std.posix.exit(1);
     };
 
     const microkit_config = b.option([]const u8, "config", "Microkit config to build for") orelse "debug";
@@ -57,7 +57,7 @@ pub fn build(b: *std.Build) void {
 
     if (microkit_board_arg == null) {
         std.log.err("Missing -Dboard=<BOARD> argument being passed\n", .{});
-        std.os.exit(1);
+        std.posix.exit(1);
     }
     const microkit_board = microkit_board_arg.?;
 
@@ -67,7 +67,7 @@ pub fn build(b: *std.Build) void {
             error.FileNotFound => std.log.err("Path to '{s}' does not exist\n", .{ microkit_board_dir }),
             else => std.log.err("Could not acccess path '{s}', error is {any}\n", .{ microkit_board_dir, err })
         }
-        std.os.exit(1);
+        std.posix.exit(1);
     };
     const libmicrokit_include = b.fmt("{s}/include", .{ microkit_board_dir });
 
@@ -81,7 +81,7 @@ pub fn build(b: *std.Build) void {
         .aarch64 => src_aarch64 ++ vgicSources(microkit_board),
         else => {
             std.log.err("Unsupported libvmm architecture given '{s}'", .{ @tagName(target.result.cpu.arch) });
-            std.os.exit(1);
+            std.posix.exit(1);
         }
     };
     libvmm.addCSourceFiles(.{
