@@ -1,99 +1,35 @@
-# Using virtIO with multiple Linux guests
+# Development notes
 
-This example shows off the virtIO support that libvmm provides using the
-[seL4 Device Driver Framework](https://github.com/au-ts/sddf) to talk to the
-actual hardware.
+## Current issues
 
-The system has two Linux guests that are exactly the same, but we have separate sets of
-Linux images and initrd for both to ease experimentation when you want to only modify
-a single client.
+In its current state the project runs without memory faults or exceptions. For this to happen some errors have been ignored which will need to be investigated.
 
-The example currently works on the following platforms:
-* QEMU ARM virt
-* HardKernel Odroid-C4
+### SMC unknown service value
 
-## Building
+The following error message is outputted:
 
-```sh
-make BOARD=<BOARD> MICROKIT_SDK=/path/to/sdk
-```
+```CLIENT_VMM-1|ERROR: Unhandled SMC: unknown value service: 0x2, function number: 0x6```
 
-Where `<BOARD>` is one of:
-* `qemu_arm_virt`
-* `odroidc4`
+This logging is from the function ```handle_smc()``` in the file src/arch/aarch64/smc.c.
 
-Other configuration options can be passed to the Makefile such as `CONFIG`
-and `BUILD_DIR`, see the Makefile for details.
+The only service that is handled without error is the ```SMC_CALL_STD_SERVICE``` which is defined as 0x4. The service that needs to be hanled in this case is 0x2 which is defined as ```SMC_CALL_SIP_SERVICE```. In the simple maaxboard example as well as this example there are 6 calls to this function, each with the service number of 0x2 followed by the function numbers: 0,6,10,10,10,10. However in this example there is an additional call with 0x2 as the service which causes an error. 
 
-If you would like to simulate the QEMU board you can run the following command:
-```sh
-make BOARD=qemu_arm_virt MICROKIT_SDK=/path/to/sdk qemu
-```
+In https://chasinglulu.github.io/downloads/ARM_DEN0028B_SMC_Calling_Convention.pdf the services are described:
 
-This will build the example code as well as run the QEMU command to simulate a
-system running the whole system.
+* SiP Service (0x2) Provides interfaces to SoC implementation-specific services on this platform, for
+example secure platform initialization, configuration, and some power control
+services.
 
-## Running
+* Standard Secure Service (0x4) -  Standard Service Calls for the management of the overall system. By standardizing
+such calls, the job of implementing Operating Systems on ARM is made easier.
 
-### virtIO console
+It is not known why this is being called and needs to be investigated. The Sip Service is currently handled by making it process the data as if it was a Standard secure service, which will need to be changed.
 
-This example makes use of the virtIO console device so that neither guest has access
-to any serial device on the platform. The virtIO console support in libvmm talks to
-a serial multiplexor which then talks to a driver for input/output to the physical
-serial device.
+### Passthrough
 
-When you boot the example, you will see different coloured output for each guest.
-The Linux logs will be interleaving like so:
-```
-Starting klogd: OKStarting klogd: 
-OK
-Running sysctl: Running sysctl: OK
-OKSaving random seed: 
-Saving random seed: [    4.070358] random: crng init done
-[    4.103992] random: crng init done
-OK
-Starting network: OK
-Starting network: OK
-OK
+In this example there are multiple memory registers that have been exposed to the linux guest so that it can run properly. Compared to the simple example an additional memory register ```efuse@30350000``` has been exposed. It is not known whether or not this will need to be mapped in for this example.
 
-Welcome to Buildroot
-buildroot login: 
-Welcome to Buildroot
-buildroot login:
-```
+The uart serial device at '''serial@30860000''' is also mapped into the guest in the system file. This shouldn't be here as this example shouldn't be relying on the serial port, instead it should be transimitting data out through virtio.
 
-Initially all input is defaulted to guest 1 in green. To switch to input into
-the other guest (red), type in `@2`. The `@` symbol is used to switch between
-clients of the serial system, in this case the red guest is client 2.
 
-### virtIO block
-
-Guest 1 and guest 2 also doubles as a client in the block system that talks
-virtIO to guest 3 that acts as driver with passthrough access to the block device.
-The requests from both clients are multiplexed through the additional block virtualiser
-component.
-
-When you boot the example, the block driver VM will boot first. When it is ready, the
-client VMs will boot together. After the client VMs boot, they will attempt to mount the
-virtIO block device `/dev/vda` into `/mnt`. The kernel logs from linux will show the
-virtIO drive initialising for both clients.
-```
-[    5.381885] virtio_blk virtio1: [vda] 2040 512-byte logical blocks (1.04 MB/1020 KiB)
-[    5.325953] virtio_blk virtio1: [vda] 2040 512-byte logical blocks (1.04 MB/1020 KiB)
-```
-
-The system expects the storage device to contain an MBR partition table that contains
-two partitions. Each partition is allocated to a single client. Partitions must have a
-starting block number that is a multiple of sDDF block's transfer size of 4096 bytes
-divided by the disk's logical size. Partitions that do not follow this restriction
-are unsupported.
-
-### QEMU set up
-When running on QEMU, read and writes go to an emulated ramdisk instead of to your
-local storage device. The ramdisk file supplied to QEMU is formatted during build
-time to contain a FAT filesystem for both partitions.
-
-### Hardware set up
-When running on the odroidc4, the system expects to read and write from the SD card.
-You will need to format the SD card yourself on the odroidc4 system.
 
