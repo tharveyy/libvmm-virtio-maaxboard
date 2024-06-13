@@ -17,6 +17,8 @@
     <memory_region name="irqsteer" size="0x1000" phys_addr="0x32e2d000" />
     <memory_region name="syscon" size="0x10000" phys_addr="0x30360000" />
     <memory_region name="clock_controller" size="0x10000" phys_addr="0x30380000" />
+
+    <memory_region name="efuse" size="0x10000" phys_addr="0x30350000" />
     
 
     <protection_domain name="CLIENT_VMM-1" priority="100">
@@ -45,6 +47,11 @@
             <map mr="pinctrl" vaddr="0x30330000" perms="rw" cached="false" />
             <map mr="gpio" vaddr="0x30200000" perms="rw" cached="false" />
             <map mr="irqsteer" vaddr="0x32e2d000" perms="rw" cached="false" />
+
+            <map mr="efuse" vaddr="0x30350000" perms="rw" cached="false" />
+            
+            <!-- shouldn't map this in  -->
+            <map mr="uart" vaddr="0x30860000" perms="rw" cached="false" /> 
 
 
             <!-- potentially just these needed -->

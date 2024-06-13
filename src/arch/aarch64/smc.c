@@ -102,8 +102,14 @@ bool handle_smc(size_t vcpu_id, uint32_t hsr)
     size_t fn_number = smc_get_function_number(&regs);
     smc_call_id_t service = smc_get_call(regs.x0);
 
+    printf("VCPU ID = %d\n", vcpu_id);
+    printf("Service = %d\n", service);
+    printf("FN NUmber = %d\n", fn_number);
+
+
     switch (service) {
         case SMC_CALL_STD_SERVICE:
+        case SMC_CALL_SIP_SERVICE:
             if (fn_number < PSCI_MAX) {
                 return handle_psci(vcpu_id, &regs, fn_number, hsr);
             }

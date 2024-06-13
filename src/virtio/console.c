@@ -36,7 +36,7 @@ static void virtio_console_features_print(uint32_t features)
 static void virtio_console_reset(struct virtio_device *dev)
 {
     LOG_CONSOLE("operation: reset\n");
-    LOG_CONSOLE_ERR("virtio_console_reset is not implemented!\n");
+ //   LOG_CONSOLE_ERR("virtio_console_reset is not implemented!\n");
 
     // @ivanv reset vqs?
 }

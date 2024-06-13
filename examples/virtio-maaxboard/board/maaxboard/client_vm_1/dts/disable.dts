@@ -59,10 +59,6 @@
             watchdog@30280000 {
                 status = "disabled";
             };
-
-            efuse@30350000 {
-                status = "disabled";
-            };
         };
 
         usb@38200000 {
