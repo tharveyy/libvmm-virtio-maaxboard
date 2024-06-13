@@ -9,6 +9,15 @@
     <memory_region name="client_vm_ram_2" size="0xe000000" page_size="0x200000" />
     <memory_region name="gic_vcpu" size="0x1000" phys_addr="0x31020000" />
     <memory_region name="uart" size="0x10000" phys_addr="0x30860000" />
+    
+    <memory_region name="gpc" size="0x10000" phys_addr="0x303a0000" />
+    <memory_region name="timer" size="0x20000" phys_addr="0x306a0000" />
+    <memory_region name="pinctrl" size="0x10000" phys_addr="0x30330000" />
+    <memory_region name="gpio" size="0x50000" phys_addr="0x30200000" />
+    <memory_region name="irqsteer" size="0x1000" phys_addr="0x32e2d000" />
+    <memory_region name="syscon" size="0x10000" phys_addr="0x30360000" />
+    <memory_region name="clock_controller" size="0x10000" phys_addr="0x30380000" />
+    
 
     <protection_domain name="CLIENT_VMM-1" priority="100">
         <program_image path="client_vmm_1.elf" />
@@ -28,6 +37,22 @@
         <virtual_machine name="client_linux-1" id="0" priority="100">
             <map mr="client_vm_ram_1" vaddr="0x40000000" perms="rwx" />
             <map mr="gic_vcpu" vaddr="0x31000000" perms="rw" cached="false" />
+            
+            <map mr="syscon" vaddr="0x30360000" perms="rw" cached="false" />
+            <map mr="clock_controller" vaddr="0x30380000" perms="rw" cached="false" />
+            <map mr="gpc" vaddr="0x303a0000" perms="rw" cached="false" />
+            <map mr="timer" vaddr="0x306a0000" perms="rw" cached="false" />
+            <map mr="pinctrl" vaddr="0x30330000" perms="rw" cached="false" />
+            <map mr="gpio" vaddr="0x30200000" perms="rw" cached="false" />
+            <map mr="irqsteer" vaddr="0x32e2d000" perms="rw" cached="false" />
+
+
+            <!-- potentially just these needed -->
+            <!-- <map mr="gpc" vaddr="0x303a0000" perms="rw" cached="false" />
+            <map mr="timer" vaddr="0x306a0000" perms="rw" cached="false" />
+            <map mr="syscon" vaddr="0x30360000" perms="rw" cached="false" />
+            <map mr="clock_controller" vaddr="0x30380000" perms="rw" cached="false" /> -->
+
         </virtual_machine>
     </protection_domain>
 

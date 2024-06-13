@@ -19,7 +19,7 @@
 #include <sddf/serial/queue.h>
 //#include <sddf/blk/queue.h>
 
-#define GUEST_RAM_SIZE 0xe000000 // must match up with the memory size in init.dts and 
+#define GUEST_RAM_SIZE 0xe000000 
 
 #if defined(BOARD_qemu_arm_virt)
 #define GUEST_DTB_VADDR 0x47f00000
@@ -108,66 +108,66 @@ void init(void)
                                              GUEST_INIT_RAM_DISK_VADDR,
                                              initrd_size
                                             );
-    // if (!kernel_pc) {
-    //     LOG_VMM_ERR("Failed to initialise guest images\n");
-    //     return;
-    // }
+    if (!kernel_pc) {
+        LOG_VMM_ERR("Failed to initialise guest images\n");
+        return;
+    }
 
-    // /* Initialise the virtual GIC driver */
-    // bool success = virq_controller_init(GUEST_VCPU_ID);
-    // if (!success) {
-    //     LOG_VMM_ERR("Failed to initialise emulated interrupt controller\n");
-    //     return;
-    // }
+    /* Initialise the virtual GIC driver */
+    bool success = virq_controller_init(GUEST_VCPU_ID);
+    if (!success) {
+        LOG_VMM_ERR("Failed to initialise emulated interrupt controller\n");
+        return;
+    }
 
-    // /* Initialise our sDDF ring buffers for the serial device */
-    // serial_queue_handle_t rxq, txq;
-    // serial_queue_init(&rxq,
-    //                   (serial_queue_t *)serial_rx_free,
-    //                   (serial_queue_t *)serial_rx_active,
-    //                   true,
-    //                   NUM_ENTRIES,
-    //                   NUM_ENTRIES);
-    // for (int i = 0; i < NUM_ENTRIES - 1; i++) {
-    //     int ret = serial_enqueue_free(&rxq,
-    //                            serial_rx_data + (i * BUFFER_SIZE),
-    //                            BUFFER_SIZE);
-    //     if (ret != 0) {
-    //         microkit_dbg_puts(microkit_name);
-    //         microkit_dbg_puts(": server rx buffer population, unable to enqueue buffer\n");
-    //     }
-    // }
-    // serial_queue_init(&txq,
-    //                   (serial_queue_t *)serial_tx_free,
-    //                   (serial_queue_t *)serial_tx_active,
-    //                   true,
-    //                   NUM_ENTRIES,
-    //                   NUM_ENTRIES);
-    // for (int i = 0; i < NUM_ENTRIES - 1; i++) {
-    //     // Have to start at the memory region left of by the rx ring
-    //     int ret = serial_enqueue_free(&txq,
-    //                            serial_tx_data + ((i + NUM_ENTRIES) * BUFFER_SIZE),
-    //                            BUFFER_SIZE);
-    //     assert(ret == 0);
-    //     if (ret != 0) {
-    //         microkit_dbg_puts(microkit_name);
-    //         microkit_dbg_puts(": server tx buffer population, unable to enqueue buffer\n");
-    //     }
-    // }
+    /* Initialise our sDDF ring buffers for the serial device */
+    serial_queue_handle_t rxq, txq;
+    serial_queue_init(&rxq,
+                      (serial_queue_t *)serial_rx_free,
+                      (serial_queue_t *)serial_rx_active,
+                      true,
+                      NUM_ENTRIES,
+                      NUM_ENTRIES);
+    for (int i = 0; i < NUM_ENTRIES - 1; i++) {
+        int ret = serial_enqueue_free(&rxq,
+                               serial_rx_data + (i * BUFFER_SIZE),
+                               BUFFER_SIZE);
+        if (ret != 0) {
+            microkit_dbg_puts(microkit_name);
+            microkit_dbg_puts(": server rx buffer population, unable to enqueue buffer\n");
+        }
+    }
+    serial_queue_init(&txq,
+                      (serial_queue_t *)serial_tx_free,
+                      (serial_queue_t *)serial_tx_active,
+                      true,
+                      NUM_ENTRIES,
+                      NUM_ENTRIES);
+    for (int i = 0; i < NUM_ENTRIES - 1; i++) {
+        // Have to start at the memory region left of by the rx ring
+        int ret = serial_enqueue_free(&txq,
+                               serial_tx_data + ((i + NUM_ENTRIES) * BUFFER_SIZE),
+                               BUFFER_SIZE);
+        assert(ret == 0);
+        if (ret != 0) {
+            microkit_dbg_puts(microkit_name);
+            microkit_dbg_puts(": server tx buffer population, unable to enqueue buffer\n");
+        }
+    }
 
-    // /* Neither ring should be plugged and hence all buffers we send should actually end up at the driver. */
-    // assert(!serial_queue_plugged(rxq.free));
-    // assert(!serial_queue_plugged(rxq.active));
-    // assert(!serial_queue_plugged(txq.free));
-    // assert(!serial_queue_plugged(txq.active));
+    /* Neither ring should be plugged and hence all buffers we send should actually end up at the driver. */
+    assert(!serial_queue_plugged(rxq.free));
+    assert(!serial_queue_plugged(rxq.active));
+    assert(!serial_queue_plugged(txq.free));
+    assert(!serial_queue_plugged(txq.active));
 
-    // /* Initialise virtIO console device */
-    // success = virtio_mmio_console_init(&virtio_console,
-    //                               VIRTIO_CONSOLE_BASE,
-    //                               VIRTIO_CONSOLE_SIZE,
-    //                               VIRTIO_CONSOLE_IRQ,
-    //                               &rxq, &txq,
-    //                               SERIAL_VIRT_TX_CH);
+    /* Initialise virtIO console device */
+    success = virtio_mmio_console_init(&virtio_console,
+                                  VIRTIO_CONSOLE_BASE,
+                                  VIRTIO_CONSOLE_SIZE,
+                                  VIRTIO_CONSOLE_IRQ,
+                                  &rxq, &txq,
+                                  SERIAL_VIRT_TX_CH);
 
     // /* virtIO block */
     // /* Initialise our sDDF queues for the block device */
