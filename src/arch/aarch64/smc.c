@@ -109,7 +109,7 @@ bool handle_smc(size_t vcpu_id, uint32_t hsr)
 
     switch (service) {
         case SMC_CALL_STD_SERVICE:
-        case SMC_CALL_SIP_SERVICE:
+        case SMC_CALL_SIP_SERVICE: // This is just supressing a warning - shouldn't be here!
             if (fn_number < PSCI_MAX) {
                 return handle_psci(vcpu_id, &regs, fn_number, hsr);
             }

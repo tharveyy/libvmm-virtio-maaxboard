@@ -50,9 +50,8 @@
 
             <map mr="efuse" vaddr="0x30350000" perms="rw" cached="false" />
             
-            <!-- shouldn't map this in  -->
+            <!-- In this example this should not be mapped in - it should be using virtio instead.-->
             <map mr="uart" vaddr="0x30860000" perms="rw" cached="false" /> 
-
 
             <!-- potentially just these needed -->
             <!-- <map mr="gpc" vaddr="0x303a0000" perms="rw" cached="false" />
