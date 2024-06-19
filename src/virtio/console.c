@@ -166,7 +166,7 @@ static int virtio_console_handle_tx(struct virtio_device *dev)
 
             if (is_empty) {
                 // @ivanv: should we be using the notify_reader/notify_writer API?
-               // printf("NOTIFYING MMIO CONSOLE\n");
+                printf("NOTIFYING MMIO CONSOLE\n");
                 microkit_notify(state->tx_ch);
             }
 
