@@ -19,7 +19,7 @@
 #include <sddf/serial/queue.h>
 //#include <sddf/blk/queue.h>
 
-#define GUEST_RAM_SIZE 0xe000000 
+#define GUEST_RAM_SIZE 0x10000000 
 
 #if defined(BOARD_qemu_arm_virt)
 #define GUEST_DTB_VADDR 0x47f00000
@@ -28,7 +28,7 @@
 #define GUEST_DTB_VADDR 0x25f10000
 #define GUEST_INIT_RAM_DISK_VADDR 0x24000000
 #elif defined(BOARD_maaxboard)
-#define GUEST_DTB_VADDR 0x4d000000
+#define GUEST_DTB_VADDR 0x4f000000
 #define GUEST_INIT_RAM_DISK_VADDR 0x4c000000
 #else
 #error Need to define guest kernel image address and DTB address
@@ -80,18 +80,22 @@ static struct virtio_console_device virtio_console;
 
 // static struct virtio_blk_device virtio_blk;
 
-void init(void)
-{
-    // blk_storage_info_t *storage_info = (blk_storage_info_t *)blk_config;
 
-    // /* Busy wait until blk device is ready
-    //    Need to put an empty assembly line to prevent compiler from optimising out the busy wait */
-    // LOG_VMM("begin busy wait\n");
-    // while (!storage_info->ready) {
-    //     asm("");
-    // }
-    // LOG_VMM("done busy waiting\n");
+/* For simplicity we just enforce the serial IRQ channel number to be the same
+ * across platforms. */
+#define SERIAL_IRQ_CH 1
 
+static void serial_ack(size_t vcpu_id, int irq, void *cookie) {
+    /*
+     * For now we by default simply ack the serial IRQ, we have not
+     * come across a case yet where more than this needs to be done.
+     */
+    microkit_irq_ack(SERIAL_IRQ_CH);
+}
+
+#define SERIAL_IRQ 58
+
+void init(void) {
     /* Initialise the VMM, the VCPU(s), and start the guest */
     LOG_VMM("starting \"%s\"\n", microkit_name);
     /* Place all the binaries in the right locations before starting the guest */
@@ -99,27 +103,28 @@ void init(void)
     size_t dtb_size = _guest_dtb_image_end - _guest_dtb_image;
     size_t initrd_size = _guest_initrd_image_end - _guest_initrd_image;
     uintptr_t kernel_pc = linux_setup_images(guest_ram_vaddr,
-                                             (uintptr_t) _guest_kernel_image,
-                                             kernel_size,
-                                             (uintptr_t) _guest_dtb_image,
-                                             GUEST_DTB_VADDR,
-                                             dtb_size,
-                                             (uintptr_t) _guest_initrd_image,
-                                             GUEST_INIT_RAM_DISK_VADDR,
-                                             initrd_size
-                                            );
+                                      (uintptr_t) _guest_kernel_image,
+                                      kernel_size,
+                                      (uintptr_t) _guest_dtb_image,
+                                      GUEST_DTB_VADDR,
+                                      dtb_size,
+                                      (uintptr_t) _guest_initrd_image,
+                                      GUEST_INIT_RAM_DISK_VADDR,
+                                      initrd_size
+                                      );
+
+
     if (!kernel_pc) {
         LOG_VMM_ERR("Failed to initialise guest images\n");
         return;
     }
-
     /* Initialise the virtual GIC driver */
     bool success = virq_controller_init(GUEST_VCPU_ID);
     if (!success) {
         LOG_VMM_ERR("Failed to initialise emulated interrupt controller\n");
         return;
-    }
-
+    }                                      
+    
     /* Initialise our sDDF ring buffers for the serial device */
     serial_queue_handle_t rxq, txq;
     serial_queue_init(&rxq,
@@ -168,46 +173,41 @@ void init(void)
                                   VIRTIO_CONSOLE_IRQ,
                                   &rxq, &txq,
                                   SERIAL_VIRT_TX_CH);
+    
+    
 
-    // /* virtIO block */
-    // /* Initialise our sDDF queues for the block device */
-    // blk_queue_handle_t blk_queue_h;
-    // blk_queue_init(&blk_queue_h,
-    //                (blk_req_queue_t *)blk_req_queue,
-    //                (blk_resp_queue_t *)blk_resp_queue,
-    //                BLK_QUEUE_SIZE);
-
-    // /* Initialise virtIO block device */
-    // success = virtio_mmio_blk_init(&virtio_blk,
-    //                     VIRTIO_BLK_BASE, VIRTIO_BLK_SIZE, VIRTIO_BLK_IRQ,
-    //                     blk_data,
-    //                     BLK_DATA_SIZE,
-    //                     storage_info,
-    //                     &blk_queue_h,
-    //                     BLK_CH);
-    // assert(success);
-
+    // // // These two are needed for the IRQ stuff
+    // success = virq_register(GUEST_VCPU_ID, SERIAL_IRQ, &serial_ack, NULL);
+    // // /* Just in case there is already an interrupt available to handle, we ack it here. */
+    // microkit_irq_ack(SERIAL_IRQ_CH);
+    
     /* Finally start the guest */
     guest_start(GUEST_VCPU_ID, kernel_pc, GUEST_DTB_VADDR, GUEST_INIT_RAM_DISK_VADDR);
 }
 
-void notified(microkit_channel ch)
-{
+
+void notified(microkit_channel ch) {
     switch (ch) {
-    case SERIAL_VIRT_RX_CH: {
-        /* We have received an event from the serial multipelxor, so we
-         * call the virtIO console handling */
-        virtio_console_handle_rx(&virtio_console);
-        break;
+
+        // // this is needed for the IRQ stuff 
+        // case SERIAL_IRQ_CH: {
+        //     bool success = virq_inject(GUEST_VCPU_ID, SERIAL_IRQ); // instead of this we want to pass it to the virtio console. 
+        //     if (!success) {
+        //         LOG_VMM_ERR("IRQ %d dropped on vCPU %d\n", SERIAL_IRQ, GUEST_VCPU_ID);
+        //     }
+        //     break;
+        // }
+        case SERIAL_VIRT_RX_CH: {
+            /* We have received an event from the serial multipelxor, so we
+            * call the virtIO console handling */
+            virtio_console_handle_rx(&virtio_console);
+            break;
     }
-    // case BLK_CH: {
-    //     virtio_blk_handle_resp(&virtio_blk);
-    //     break;
-    // }
-    default:
-        LOG_VMM_ERR("Unexpected channel, ch: 0x%lx\n", ch);
+        default:
+            printf("Unexpected channel, ch: 0x%lx\n", ch);
     }
 }
+
 
 /*
  * The primary purpose of the VMM after initialisation is to act as a fault-handler,

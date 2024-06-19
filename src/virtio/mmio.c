@@ -50,7 +50,7 @@ int handle_virtio_mmio_set_status_flag(virtio_device_t *dev, uint32_t reg)
     // we only care about the new status
     dev->data.Status &= reg;
     reg ^= dev->data.Status;
-    // printf("VIRTIO MMIO|INFO: set status flag 0x%x.\n", reg);
+    printf("VIRTIO MMIO|INFO: set status flag %d.\n", reg);
 
     switch (reg) {
     case VIRTIO_CONFIG_S_RESET:

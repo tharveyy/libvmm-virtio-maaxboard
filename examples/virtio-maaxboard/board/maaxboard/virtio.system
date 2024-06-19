@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- Copyright 2023, UNSW
+ Copyright 2023
 
  SPDX-License-Identifier: BSD-2-Clause
 -->
 <system>
-    <memory_region name="client_vm_ram_1" size="0xe000000" page_size="0x200000" />
-    <memory_region name="client_vm_ram_2" size="0xe000000" page_size="0x200000" />
-    <memory_region name="gic_vcpu" size="0x1000" phys_addr="0x31020000" />
+    <!-- We allocate 512MiB of RAM for the guest. -->
+    <memory_region name="guest_ram" size="0x10000000" page_size="0x200000" />
+    <!-- We want to map in the UART to get input/output. -->
     <memory_region name="uart" size="0x10000" phys_addr="0x30860000" />
-    
+    <!-- To boot Linux, we need to map in the GIC virtual CPU interface. -->
+    <memory_region name="gic_vcpu" size="0x1000" phys_addr="0x31020000" />
+
     <memory_region name="gpc" size="0x10000" phys_addr="0x303a0000" />
     <memory_region name="timer" size="0x20000" phys_addr="0x306a0000" />
     <memory_region name="pinctrl" size="0x10000" phys_addr="0x30330000" />
@@ -18,15 +20,10 @@
     <memory_region name="syscon" size="0x10000" phys_addr="0x30360000" />
     <memory_region name="clock_controller" size="0x10000" phys_addr="0x30380000" />
 
-    <memory_region name="efuse" size="0x10000" phys_addr="0x30350000" />
-    
-
-    <protection_domain name="CLIENT_VMM-1" priority="100">
+    <protection_domain name="CLIENT_VMM-1" priority="254">
         <program_image path="client_vmm_1.elf" />
-        <map mr="client_vm_ram_1" vaddr="0x40000000" perms="rw" setvar_vaddr="guest_ram_vaddr" />
+        <map mr="guest_ram" vaddr="0x40000000" perms="rw" setvar_vaddr="guest_ram_vaddr" />
         
-        <!-- sDDF related regions for virtIO console -->
-        <!-- shared memory for queues -->
         <map mr="rx_free_serial_vmm_1" vaddr="0x6_000_000" perms="rw" cached="true" setvar_vaddr="serial_rx_free" />
         <map mr="rx_active_serial_vmm_1" vaddr="0x6_200_000" perms="rw" cached="true" setvar_vaddr="serial_rx_active" />
         <map mr="tx_free_serial_vmm_1" vaddr="0x103_400_000" perms="rw" cached="true" setvar_vaddr="serial_tx_free" />
@@ -35,11 +32,13 @@
         <map mr="tx_data_serial_vmm_1" vaddr="0x8_400_000" perms="rw" cached="true" setvar_vaddr="serial_tx_data" />
         <map mr="rx_data_serial_vmm_1" vaddr="0x8_600_000" perms="rw" cached="true" setvar_vaddr="serial_rx_data" />
         
-
-        <virtual_machine name="client_linux-1" id="0" priority="100">
-            <map mr="client_vm_ram_1" vaddr="0x40000000" perms="rwx" />
+        
+        <virtual_machine name="linux" id="0">
+            <map mr="guest_ram" vaddr="0x40000000" perms="rwx" />
+            <map mr="uart" vaddr="0x30860000" perms="rw" cached="false" />
+            <!-- The guest needs to view what is actually the vCPU interface as the CPU interface. -->
             <map mr="gic_vcpu" vaddr="0x31000000" perms="rw" cached="false" />
-            
+
             <map mr="syscon" vaddr="0x30360000" perms="rw" cached="false" />
             <map mr="clock_controller" vaddr="0x30380000" perms="rw" cached="false" />
             <map mr="gpc" vaddr="0x303a0000" perms="rw" cached="false" />
@@ -47,42 +46,9 @@
             <map mr="pinctrl" vaddr="0x30330000" perms="rw" cached="false" />
             <map mr="gpio" vaddr="0x30200000" perms="rw" cached="false" />
             <map mr="irqsteer" vaddr="0x32e2d000" perms="rw" cached="false" />
-
-            <map mr="efuse" vaddr="0x30350000" perms="rw" cached="false" />
-            
-            <!-- In this example this should not be mapped in - it should be using virtio instead.-->
-            <map mr="uart" vaddr="0x30860000" perms="rw" cached="false" /> 
-
-            <!-- potentially just these needed -->
-            <!-- <map mr="gpc" vaddr="0x303a0000" perms="rw" cached="false" />
-            <map mr="timer" vaddr="0x306a0000" perms="rw" cached="false" />
-            <map mr="syscon" vaddr="0x30360000" perms="rw" cached="false" />
-            <map mr="clock_controller" vaddr="0x30380000" perms="rw" cached="false" /> -->
-
         </virtual_machine>
     </protection_domain>
 
-    <!-- <protection_domain name="CLIENT_VMM-2" priority="100">
-        <program_image path="client_vmm_2.elf" />
-        <map mr="client_vm_ram_2" vaddr="0x20000000" perms="rw" setvar_vaddr="guest_ram_vaddr" />
-        
-
-        <map mr="rx_free_serial_vmm_2" vaddr="0x6_000_000" perms="rw" cached="true" setvar_vaddr="serial_rx_free" />
-        <map mr="rx_active_serial_vmm_2" vaddr="0x6_200_000" perms="rw" cached="true" setvar_vaddr="serial_rx_active" />
-        <map mr="tx_free_serial_vmm_2" vaddr="0x103_400_000" perms="rw" cached="true" setvar_vaddr="serial_tx_free" />
-        <map mr="tx_active_serial_vmm_2" vaddr="0x103_600_000" perms="rw" cached="true" setvar_vaddr="serial_tx_active" />
-
-        <map mr="tx_data_serial_vmm_2" vaddr="0x8_800_000" perms="rw" cached="true" setvar_vaddr="serial_tx_data" />
-        <map mr="rx_data_serial_vmm_2" vaddr="0x8_a00_000" perms="rw" cached="true" setvar_vaddr="serial_rx_data" />
-
-        <virtual_machine name="client_linux-2" id="0" priority="100">
-            <map mr="client_vm_ram_2" vaddr="0x20000000" perms="rwx" />
-            <map mr="gic_vcpu" vaddr="0xffc02000" perms="rw" cached="false" />
-        </virtual_machine>
-    </protection_domain> -->
-
-    <!-- Serial sDDF regions -->
-    <!-- Shared memory for the actual data transfered -->
     <memory_region name="tx_data_driver" size="0x200_000" page_size="0x200_000" />
     <memory_region name="rx_data_driver" size="0x200_000" page_size="0x200_000" />
     <memory_region name="tx_data_serial_vmm_1" size="0x200_000" page_size="0x200_000" />
@@ -115,7 +81,7 @@
     <memory_region name="rx_free_serial_vmm_3" size="0x200_000" page_size="0x200_000"/>
     <memory_region name="rx_active_serial_vmm_3" size="0x200_000" page_size="0x200_000"/>
 
-    <!-- Virtualiser for transmit (TX) serial data -->
+     <!-- Virtualiser for transmit (TX) serial data -->
     <protection_domain name="serial_virt_tx" priority="100" pp="true">
         <program_image path="serial_virt_tx.elf" />
          <!-- shared memory for driver/virt queues -->
@@ -173,6 +139,7 @@
         <irq irq="58" id="1" trigger="edge" />
     </protection_domain>
 
+
     <channel>
         <end pd="CLIENT_VMM-1" id="1"/>
         <end pd="serial_virt_tx" id="1"/>
@@ -202,4 +169,6 @@
         <end pd="uart_driver" id="10"/>
         <end pd="serial_virt_rx" id="11"/>
     </channel>
+
+
 </system>

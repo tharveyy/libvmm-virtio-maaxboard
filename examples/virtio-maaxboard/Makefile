@@ -99,6 +99,8 @@ CLIENT_VM_1_DTS_OVERLAYS := ${CLIENT_VM_1_DTS_OVERLAYS_${BOARD}}
 CLIENT_VM_1_DTB := $(BUILD_DIR)/client_vm_1.dtb
 
 
+
+
 CLIENT_VM_2_LINUX := $(CLIENT_VM_2_DIR)/linux
 CLIENT_VM_2_INITRD := $(CLIENT_VM_2_DIR)/rootfs.cpio.gz
 CLIENT_VM_2_INITRD_MODIFIED := $(BUILD_DIR)/client_vm_2_rootfs.cpio.gz
@@ -128,6 +130,8 @@ SDDF_SERIAL_DRIVER := ${SDDF_SERIAL_DRIVER_${BOARD}}
 
 # ELFS := client_vmm_1.elf client_vmm_2.elf blk_driver_vmm.elf serial_virt_tx.elf serial_virt_rx.elf uart_driver.elf blk_virt.elf
 ELFS := client_vmm_1.elf serial_virt_tx.elf serial_virt_rx.elf uart_driver.elf
+
+#ELFS := client_vmm_1.elf
 
 # BLK_DRIVER_VM_USERLEVEL_qemu_arm_virt := uio_blk_driver
 # BLK_DRIVER_VM_USERLEVEL_odroidc4 := uio_blk_driver

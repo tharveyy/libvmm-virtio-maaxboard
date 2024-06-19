@@ -36,7 +36,7 @@ static void virtio_console_features_print(uint32_t features)
 static void virtio_console_reset(struct virtio_device *dev)
 {
     LOG_CONSOLE("operation: reset\n");
-    // LOG_CONSOLE_ERR("virtio_console_reset is not implemented!\n");  // This is just supressing a warning - this error message should be here!
+    LOG_CONSOLE_ERR("virtio_console_reset is not implemented!\n");  // This is just supressing a warning - this error message should be here!
 
     // @ivanv reset vqs?
 }
@@ -166,6 +166,7 @@ static int virtio_console_handle_tx(struct virtio_device *dev)
 
             if (is_empty) {
                 // @ivanv: should we be using the notify_reader/notify_writer API?
+               // printf("NOTIFYING MMIO CONSOLE\n");
                 microkit_notify(state->tx_ch);
             }
 

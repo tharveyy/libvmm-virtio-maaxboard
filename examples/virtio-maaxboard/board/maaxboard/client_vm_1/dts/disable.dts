@@ -59,6 +59,10 @@
             watchdog@30280000 {
                 status = "disabled";
             };
+
+            efuse@30350000 {
+                status = "disabled";
+            };
         };
 
         usb@38200000 {
@@ -66,6 +70,10 @@
         };
 
         usb-phy@382f0040 {
+            status = "disabled";
+        };
+
+        serial@30860000 {
             status = "disabled";
         };
     };
