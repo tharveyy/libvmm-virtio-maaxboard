@@ -194,6 +194,7 @@ void notified(microkit_channel ch)
     case SERIAL_VIRT_RX_CH: {
         /* We have received an event from the serial multipelxor, so we
          * call the virtIO console handling */
+        printf("Handling RX in console\n")
         virtio_console_handle_rx(&virtio_console);
         break;
     }

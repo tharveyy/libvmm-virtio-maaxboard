@@ -35,7 +35,6 @@
         
         <virtual_machine name="linux" id="0">
             <map mr="guest_ram" vaddr="0x40000000" perms="rwx" />
-            <map mr="uart" vaddr="0x30860000" perms="rw" cached="false" />
             <!-- The guest needs to view what is actually the vCPU interface as the CPU interface. -->
             <map mr="gic_vcpu" vaddr="0x31000000" perms="rw" cached="false" />
 
@@ -47,6 +46,8 @@
             <map mr="gpio" vaddr="0x30200000" perms="rw" cached="false" />
             <map mr="irqsteer" vaddr="0x32e2d000" perms="rw" cached="false" />
         </virtual_machine>
+        <!-- UART IRQ -->
+        <!-- <irq irq="58" id="11" /> -->
     </protection_domain>
 
     <memory_region name="tx_data_driver" size="0x200_000" page_size="0x200_000" />

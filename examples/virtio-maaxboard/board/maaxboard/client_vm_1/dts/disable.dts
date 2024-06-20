@@ -37,6 +37,10 @@
             i2c@30a20000 {
                 status = "disabled";
             };
+              
+            serial@30860000 {
+                status = "disabled";
+            };
         };
 
         bus@30000000 {
@@ -63,6 +67,11 @@
             efuse@30350000 {
                 status = "disabled";
             };
+
+            serial@30860000 {
+                status = "disabled";
+            };
+
         };
 
         usb@38200000 {
@@ -73,8 +82,7 @@
             status = "disabled";
         };
 
-        serial@30860000 {
-            status = "disabled";
-        };
+
+
     };
 };

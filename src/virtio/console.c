@@ -222,12 +222,12 @@ int virtio_console_handle_rx(struct virtio_console_device *console)
     assert(dev->num_vqs > RX_QUEUE);
     struct virtio_queue_handler *rx_queue = &dev->vqs[RX_QUEUE];
     struct virtq *virtq = &rx_queue->virtq;
-    uint16_t guest_idx = virtq->avail->idx;
+    uint16_t guest_idx = virtq->avail->idx; // falls over here... So it hasn't done the necessary setup for the guest id at this point.
     size_t idx = rx_queue->last_idx;
+
 
     if (idx != guest_idx) {
         size_t bytes_written = 0;
-
         uint16_t desc_head = virtq->avail->ring[idx % virtq->num];
         struct virtq_desc desc;
         uint16_t desc_idx = desc_head;
