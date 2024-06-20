@@ -10,7 +10,7 @@
     chosen {
         linux,initrd-start = <0x00000000 0x4c000000>;
         linux,initrd-end = <0x00000000 0x4e000000>;
-
+        stdout-path = "/virtio-console@0130000";
         bootargs = "console=hvc0 earlycon=hvc0 root=/dev/ram0 nosmp rw loglevel=8 pci=nomsi initcall_blacklist=imx8_soc_init maxcpus=1";		// root=/dev/nfs nfsroot=/vmm-rfs
 		// root=/dev/mmcblk0p1 rootwait
     };

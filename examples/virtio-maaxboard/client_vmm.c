@@ -83,7 +83,7 @@ static struct virtio_console_device virtio_console;
 
 /* For simplicity we just enforce the serial IRQ channel number to be the same
  * across platforms. */
-#define SERIAL_IRQ_CH 1
+#define SERIAL_IRQ_CH 11
 
 static void serial_ack(size_t vcpu_id, int irq, void *cookie) {
     /*
@@ -174,22 +174,23 @@ void init(void) {
                                   &rxq, &txq,
                                   SERIAL_VIRT_TX_CH);
     
-    
+    // Try put this in the UART ONE - maybe that's what is missing????
 
-    // // // These two are needed for the IRQ stuff
+    // // These two are needed for the IRQ stuff
     // success = virq_register(GUEST_VCPU_ID, SERIAL_IRQ, &serial_ack, NULL);
     // // /* Just in case there is already an interrupt available to handle, we ack it here. */
     // microkit_irq_ack(SERIAL_IRQ_CH);
     
     /* Finally start the guest */
-    guest_start(GUEST_VCPU_ID, kernel_pc, GUEST_DTB_VADDR, GUEST_INIT_RAM_DISK_VADDR);
+    //guest_start(GUEST_VCPU_ID, kernel_pc, GUEST_DTB_VADDR, GUEST_INIT_RAM_DISK_VADDR);
+    // guest_stop(GUEST_VCPU_ID);
 }
 
 
 void notified(microkit_channel ch) {
     switch (ch) {
 
-        // // this is needed for the IRQ stuff 
+        // this is needed for the IRQ stuff 
         // case SERIAL_IRQ_CH: {
         //     bool success = virq_inject(GUEST_VCPU_ID, SERIAL_IRQ); // instead of this we want to pass it to the virtio console. 
         //     if (!success) {
@@ -200,6 +201,7 @@ void notified(microkit_channel ch) {
         case SERIAL_VIRT_RX_CH: {
             /* We have received an event from the serial multipelxor, so we
             * call the virtIO console handling */
+            printf("Handling RX in console\n");
             virtio_console_handle_rx(&virtio_console);
             break;
     }
